@@ -49,7 +49,10 @@ td.num{font-family:var(--mono);text-align:right}
 .gram-in{width:74px;padding:5px 7px;font-size:13px;text-align:right;font-family:var(--mono);border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--pistache-d);font-weight:600}
 tr.total td{font-weight:700;border-top:2px solid var(--line);border-bottom:none;padding-top:9px}
 .gauge{margin-bottom:11px} .gauge-head{display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px}
-.gauge-head .lab{font-weight:600} .gauge-head .val{font-family:var(--mono);color:var(--ink2)}
+.gauge-head .lab{font-weight:600;display:inline-flex;align-items:center;gap:6px} .gauge-head .val{font-family:var(--mono);color:var(--ink2)}
+.info{width:15px;height:15px;min-width:15px;border-radius:50%;border:1px solid var(--line);background:#fff;color:var(--ink2);font:italic 700 10px/1 var(--mono);cursor:pointer;display:inline-grid;place-items:center;padding:0}
+.info:hover{background:var(--ink);color:#fff;border-color:var(--ink)}
+.gauge .tip{font-size:12px;color:var(--ink2);background:var(--frost-l);border:1px solid #C3D8E3;border-radius:8px;padding:8px 10px;margin:0 0 8px;line-height:1.45}
 .bar{height:8px;background:#E4E8DD;border-radius:5px;overflow:hidden;position:relative}
 .bar i{position:absolute;top:0;left:0;height:100%;border-radius:5px;transition:width .25s ease,background .25s}
 .target-tick{position:absolute;top:-2px;width:2px;height:12px;background:var(--ink);opacity:.5}
@@ -234,6 +237,14 @@ const METRICS=["Gor","PRT","ST","POD","PAC"], MIDX={Gor:0,PRT:1,ST:2,POD:3,PAC:4
 // for them; everything else rounds to whole grams.
 const STAB={xantana:1,neutro:1};
 function roundG(ing,g){return STAB[ing]?Math.round(g*10)/10:Math.round(g);}
+// friendly gauge labels + click-to-open explanations (pt-BR)
+const GLABEL={Gor:"Gordura",PRT:"PRT",ST:"ST",POD:"POD",PAC:"PAC"};
+const GINFO={
+  PRT:"Proteína (PRT): vem do leite, leite em pó, gema e iogurte. Dá corpo e cremosidade e ajuda a reter o ar e a água. No gelato fica em torno de 4 a 5% da mistura.",
+  ST:"Sólidos totais (ST): tudo o que não é água (açúcares, gordura, proteína, sólidos da fruta e estabilizante). Mais sólidos significa menos água livre, textura mais cremosa e menos cristais de gelo.",
+  POD:"POD (poder de dulçor): mede o quão doce a mistura fica, usando a sacarose como referência (sacarose = 100). A dextrose adoça menos (cerca de 74) e a frutose adoça mais. Ajusta o sabor doce sem mudar muito a textura.",
+  PAC:"PAC (poder anticongelante): mede o quanto os açúcares abaixam o ponto de congelamento, com a sacarose como referência (= 100). PAC alto deixa o produto mais macio e fácil de colher; PAC baixo deixa mais firme. Dextrose e açúcar invertido têm PAC alto (cerca de 190).",
+};
 
 // flavors available per base type
 const FLAVORS={
@@ -618,9 +629,11 @@ function update(){
     const col=off?'var(--amber)':(m==='PAC'?'var(--frost)':'var(--pistache)');
     const tickPos=target?Math.min(100,target/Math.max(target,val)*100):100;
     const div=document.createElement('div');div.className='gauge';
-    div.innerHTML=`<div class="gauge-head"><span class="lab">${m}</span>
-      <span class="val">${val.toFixed(0)} / ${target} ${off?'⚠':'✓'}</span></div>
-      <div class="bar"><i style="width:${pct}%;background:${col}"></i><span class="target-tick" style="left:${tickPos}%"></span></div>`;
+    const info=GINFO[m]?` <button class="info" type="button" aria-label="O que é ${GLABEL[m]}?">i</button>`:'';
+    const tip=GINFO[m]?`<div class="tip" hidden>${GINFO[m]}</div>`:'';
+    div.innerHTML=`<div class="gauge-head"><span class="lab">${GLABEL[m]}${info}</span>
+      <span class="val">${val.toFixed(0)} / ${Math.round(target)} ${off?'⚠':'✓'}</span></div>
+      ${tip}<div class="bar"><i style="width:${pct}%;background:${col}"></i><span class="target-tick" style="left:${tickPos}%"></span></div>`;
     g.appendChild(div);
   });
   renderRecipe();
@@ -757,6 +770,12 @@ document.getElementById('functional').addEventListener('change',e=>{
 });
 document.getElementById('wheyAmt').addEventListener('input',loadRecipe);
 document.getElementById('copyRecipe').addEventListener('click',copyRecipe);
+// (i) tooltips in the Balanço vs Alvo gauges — delegated so it survives re-renders
+document.getElementById('gauges').addEventListener('click',e=>{
+  const btn=e.target.closest('.info');if(!btn)return;
+  const tip=btn.closest('.gauge').querySelector('.tip');
+  if(tip)tip.hidden=!tip.hidden;
+});
 function updatePacSug(){const t=+document.getElementById('temp').value;const sug=suggestPAC(t);
   document.getElementById('pacsug').textContent=`(sugerido p/ ${t}°C: ${sug} — regra prática, ajustável)`;}
 document.getElementById('temp').addEventListener('input',e=>{
