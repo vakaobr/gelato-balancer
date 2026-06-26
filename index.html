@@ -126,6 +126,18 @@ footer{margin-top:24px;font-size:12px;color:var(--ink2);line-height:1.5}
   </div>
 </div>
 
+<div class="temp-block" id="neutroBlock" style="background:#E3EFDB;border-color:#B8D4A8">
+  <div class="temp-row">
+    <label for="neutroChk" style="color:var(--ok);display:flex;align-items:center;gap:8px;cursor:pointer;min-width:auto">
+      <input type="checkbox" id="neutroChk" style="width:18px;height:18px;accent-color:var(--ok);cursor:pointer"> Estabilizante (neutro)
+    </label>
+    <span id="neutroControls" style="display:none;align-items:center;gap:10px;flex-wrap:wrap">
+      <span class="pac-readout" style="color:var(--ok)">Neutro <input type="number" id="neutroAmt" value="5" min="0" max="15" step="0.5" style="width:60px;padding:5px 7px;font-size:13px;font-family:var(--mono)"> g/kg</span>
+      <span class="suggest" id="neutroInfo" style="color:var(--ok)"></span>
+    </span>
+  </div>
+</div>
+
 <div class="temp-block">
   <div class="temp-row">
     <label for="temp">Temp. freezer</label>
@@ -194,7 +206,7 @@ const ING = {
   castanhapara:{n:"Pasta de castanha do Pará",c:[66,14,97,2,2],nut:[659,67,12,2,14]},
   leite:{n:"Leite integral (Mercadona)",c:[3.6,3.1,11.6,0.82,4.89],nut:[63,3.6,4.6,4.6,3.1]},
   natas:{n:"Natas frescas 35%",c:[35,2,40,3,3],nut:[340,35,3,3,2]},
-  leitepo:{n:"Leite em pó desn.",c:[1,35,96,52,54],nut:[358,1,52,52,35]},
+  leitepo:{n:"Leite em pó desn.",c:[1,35,96,8,54],nut:[358,1,52,52,35]},
   gema:{n:"Gema de ovo",c:[31,16,50,0,0],nut:[322,27,3.6,0.6,16]},
   iogurtegrego:{n:"Iogurte grego",c:[5,9,16,3,4],nut:[97,5,3.6,3.6,9]},
   leiteLF:{n:"Leite proteico s/ lactose (Mercadona)",c:[0.2,6.0,11.5,3,9],nut:[44,0.2,4.6,4.6,6.0]},
@@ -205,7 +217,7 @@ const ING = {
   dextrose:{n:"Dextrose",c:[0,0,100,74,193],nut:[368,0,92,92,0]},
   invertido:{n:"Açúcar invertido",c:[0,0,75,125,190],nut:[310,0,75,75,0]},
   malto:{n:"Maltodextrina",c:[0,0,100,0,0],nut:[380,0,95,2,0]},
-  eritritol:{n:"Eritritol",c:[0,0,100,70,0],nut:[20,0,100,0,0]},
+  eritritol:{n:"Eritritol",c:[0,0,100,70,40],nut:[20,0,100,0,0]},
   inulina:{n:"Inulina",c:[0,0,95,10,5],nut:[150,0,95,5,0]},
   cacau:{n:"Cacau magro",c:[11,20,95,0,0],nut:[228,11,58,1,20]},
   choco70:{n:"Chocolate 70%",c:[42,8,99,35,35],nut:[598,42,46,37,8]},
@@ -284,15 +296,17 @@ function baseRecipe(base,flavor){
   }
   if(base==="sorbet"){
     const F={
-      manga:{manga:480,agua:300,sacarose:130,dextrose:55,invertido:30,xantana:2},
-      morango:{morango:500,agua:290,sacarose:135,dextrose:55,invertido:30,xantana:2},
-      limao:{limao:180,agua:600,sacarose:160,dextrose:60,invertido:30,xantana:2},
-      frutas_vermelhas:{polpa:470,agua:310,sacarose:135,dextrose:55,invertido:30,xantana:2},
-      banana:{banana:420,agua:330,sacarose:115,dextrose:50,invertido:30,xantana:2},
+      // maltodextrina adiciona sólidos e corpo sem doçura/PAC extra (prática de sorbet pro),
+      // mantendo ST ~310-320, POD ~205-215 e PAC ~270-290 (faixa de literatura).
+      manga:{manga:450,sacarose:100,dextrose:35,invertido:25,malto:95,agua:293,xantana:2},
+      morango:{morango:480,sacarose:115,dextrose:35,invertido:22,malto:90,agua:256,xantana:2},
+      limao:{limao:170,sacarose:145,dextrose:38,invertido:25,malto:90,agua:530,xantana:2},
+      frutas_vermelhas:{polpa:460,sacarose:105,dextrose:35,invertido:22,malto:95,agua:281,xantana:2},
+      banana:{banana:400,sacarose:85,dextrose:28,invertido:18,malto:75,agua:392,xantana:2},
       caramelo_banana:{banana:400,agua:300,pastacaramelo:70,sacarose:80,dextrose:45,sal:4,invertido:25,xantana:2},
-      abacaxi:{abacaxi:490,agua:295,sacarose:130,dextrose:55,invertido:30,xantana:2},
-      kiwi:{kiwi:470,agua:300,sacarose:135,dextrose:55,invertido:30,xantana:2},
-      pessego:{pessego:500,agua:290,sacarose:140,dextrose:55,invertido:30,xantana:2},
+      abacaxi:{abacaxi:470,sacarose:100,dextrose:35,invertido:22,malto:98,agua:273,xantana:2},
+      kiwi:{kiwi:450,sacarose:95,dextrose:30,invertido:22,malto:98,agua:303,xantana:2},
+      pessego:{pessego:480,sacarose:108,dextrose:35,invertido:22,malto:88,agua:265,xantana:2},
       margarita:{limao:150,agua:520,sacarose:150,dextrose:60,invertido:30,tequila:50,tripleSec:25,xantana:2},
       margarita_virgem:{limao:160,agua:560,agave:90,sacarose:120,dextrose:55,invertido:25,xantana:2},
     };
@@ -311,9 +325,9 @@ function baseRecipe(base,flavor){
 
 // targets per base (PAC handled separately via slider)
 function baseTargets(base){
-  if(base==="sorbet") return {Gor:2,PRT:3,ST:320,POD:200};
+  if(base==="sorbet") return {Gor:2,PRT:3,ST:320,POD:210};
   if(base==="frozenyogurt") return {Gor:40,PRT:50,ST:380,POD:175};
-  if(base==="icecream") return {Gor:115,PRT:46,ST:400,POD:175}; // American: high butterfat, egg-custard protein
+  if(base==="icecream") return {Gor:145,PRT:48,ST:425,POD:175}; // American premium: 14-15% butterfat, egg-custard protein
   return {Gor:88,PRT:48,ST:415,POD:172}; // gelato generic
 }
 // per-flavor target overrides (validated / literature) — gelato/nut-specific
@@ -390,7 +404,9 @@ function leversFor(base,diet){
   }
   if(base==="sorbet") return {Gor:null,PRT:null,ST:"malto",POD:"sacarose",PAC:"dextrose"};
   const fat=diet==="lactosefree"?"nataLF":"natas";
-  return {Gor:fat,PRT:(diet==="lactosefree"?"whey":"leitepo"),ST:"malto",POD:"sacarose",PAC:"dextrose"};
+  // lactose-free milk is already high-protein (6g/100g), so don't chase PRT (would inject whey
+  // into a plain recipe); protein floats and currentTargets lifts the PRT target to match it.
+  return {Gor:fat,PRT:(diet==="lactosefree"?null:"leitepo"),ST:"malto",POD:"sacarose",PAC:"dextrose"};
 }
 function fillerFor(base,diet){
   if(base==="sorbet") return "agua";
@@ -436,7 +452,7 @@ function prepSteps(base,hasEgg,isSugarFree){
 }
 
 // ---- state ----
-let state={base:"gelato",diet:"normal",flavor:"pistache",amount:1000,rows:[],functional:false,wheyAmt:40};
+let state={base:"gelato",diet:"normal",flavor:"pistache",amount:1000,rows:[],functional:false,wheyAmt:40,neutroOn:false,neutroDose:5};
 
 function isValidated(){return state.base==="gelato"&&state.diet==="normal"&&state.flavor==="pistache";}
 
@@ -462,28 +478,41 @@ function loadRecipe(){
     const existing=state.rows.find(r=>r.ing==='whey');
     if(existing) existing.g=state.wheyAmt; else state.rows.push({ing:'whey',g:state.wheyAmt});
   }
+  // neutro (estabilizante) — opcional, só em bases lácteas (sorbet usa xantana). Dose em g/kg, escala com o lote.
+  state.neutroOn=document.getElementById('neutroChk').checked;
+  state.neutroDose=+document.getElementById('neutroAmt').value||0;
+  if(state.neutroOn && state.base!=='sorbet' && state.neutroDose>0){
+    const ng=Math.round(state.neutroDose*scale);
+    const ex=state.rows.find(r=>r.ing==='neutro');
+    if(ex) ex.g=ng; else state.rows.push({ing:'neutro',g:ng});
+  }
   const t=+document.getElementById('temp').value;
   const sug=suggestPAC(t);
   document.getElementById('pac').value=Math.min(380,Math.max(40,sug));
   document.getElementById('pacval').textContent=document.getElementById('pac').value;
-  const defOv={icecream:60,gelato:25,frozenyogurt:30,sorbet:25};
+  const defOv={icecream:35,gelato:25,frozenyogurt:30,sorbet:25}; // realista p/ máquina doméstica de compressor (~20-35%)
   document.getElementById('overrun').value=defOv[state.base]||25;
   render();
 }
 function calc(){const t={Gor:0,PRT:0,ST:0,POD:0,PAC:0,g:0};
   for(const r of state.rows){const c=ING[r.ing].c;t.g+=r.g;METRICS.forEach(m=>t[m]+=r.g*c[MIDX[m]]/100);}return t;}
 
-function currentTargets(){
-  const tg=Object.assign({},targetsFor(state.base,state.flavor));
-  tg.PAC=+document.getElementById('pac').value;
-  // functional: protein deliberately exceeds base target. Lift PRT and ST targets by whey's
-  // contribution (whey ~80g protein, ~90g solids /100g), scaled to batch, so gauges track intent.
+// Targets are concentrations expressed per 1000 g of mix. They are scaled to the actual
+// batch basis (basisG) so the gauges and the auto-balancer stay correct at ANY total amount.
+// Gauges pass the current mix total (calc().g); the solver passes the requested total.
+function currentTargets(basisG){
+  const f=(basisG||1000)/1000;
+  const base=targetsFor(state.base,state.flavor);
+  const tg={};
+  ['Gor','PRT','ST','POD'].forEach(m=>tg[m]=base[m]*f);
+  tg.PAC=(+document.getElementById('pac').value)*f; // slider value is per-1000 g → scale too
+  // functional: protein deliberately exceeds base target. Whey is a FIXED gram addition
+  // (not scaled with batch), so add its absolute contribution (~80g protein, ~90g solids /100g).
   if(state.functional && state.wheyAmt>0){
-    const scale=1000/state.amount;
-    const wheyProt=state.wheyAmt*0.80*scale;
-    const wheySolids=state.wheyAmt*0.90*scale;
+    const wheyProt=state.wheyAmt*0.80;
+    const wheySolids=state.wheyAmt*0.90;
     // malto (ST lever) can absorb some solids by going toward zero; lift ST by the net it can't
-    const maltoInRecipe=(state.rows.find(r=>r.ing==='malto')||{g:0}).g*scale;
+    const maltoInRecipe=(state.rows.find(r=>r.ing==='malto')||{g:0}).g;
     const netSolids=Math.max(0, wheySolids - maltoInRecipe);
     tg.PRT=tg.PRT+wheyProt;
     tg.ST=tg.ST+netSolids;
@@ -493,8 +522,7 @@ function currentTargets(){
   // intent rather than flagging a false overshoot from the protein milk.
   if(state.diet==="lactosefree"){
     const actualProt=calc().PRT;
-    const baseProt=targetsFor(state.base,state.flavor).PRT;
-    if(actualProt>baseProt) tg.PRT=Math.round(actualProt);
+    if(actualProt>tg.PRT) tg.PRT=Math.round(actualProt);
   }
   return tg;
 }
@@ -508,6 +536,10 @@ function render(){
     if(wheyPct>7) extra=" · ⚠ dose alta: ST sobe muito, risco de textura mais gelada/seca";
     document.getElementById('wheyInfo').textContent=`(+~${protAdd} g proteína no lote · PRT acima do alvo por opção${extra})`;
   } else document.getElementById('wheyInfo').textContent="";
+  // neutro info
+  if(state.neutroOn && state.base!=='sorbet' && state.neutroDose>0)
+    document.getElementById('neutroInfo').textContent=`(~${(state.neutroDose/10).toFixed(1)}% — liga a água, melhora cremosidade e conservação)`;
+  else document.getElementById('neutroInfo').textContent="";
   // flavor tag
   const tag=document.getElementById('flavtag');
   if(isValidated()){tag.textContent="validado";tag.className="flag ok";}
@@ -526,14 +558,14 @@ function render(){
     tb.appendChild(tr);
   });
   // note
-  const notes={gelato:"Base láctea. Leite em pó repõe proteína e sólidos sem água. Estabilizante: neutro (combina com proteína/gordura do leite).",
-    icecream:"Ice cream americano: mais gordura (natas) e mais ar (overrun 50–100%). Base de creme rica em gemas. Estabilizante: neutro.",
-    sorbet:"Sistema água+açúcar, sem laticínio. PAC controla a textura. Estabilizante: goma xantana (~0,2%), melhor que neutro em base sem gordura. Açúcar invertido baixa o ponto de congelamento.",
-    frozenyogurt:"Iogurte entra frio após pasteurizar. Acidez e proteína mais altas que gelato. Estabilizante: neutro."};
+  const notes={gelato:"Base láctea. Leite em pó repõe proteína e sólidos sem água. Estabilizado por gema + proteínas do leite; neutro é opcional (ative acima, ~0,5%).",
+    icecream:"Ice cream americano: mais gordura (natas) e mais ar. Em máquina doméstica o overrun fica ~30%; comercialmente vai a 50-100%. Base de creme rica em gemas; neutro opcional acima.",
+    sorbet:"Sistema água+açúcar, sem laticínio. PAC controla a textura. Estabilizante: goma xantana (~0,2%), melhor que neutro em base sem gordura. Maltodextrina dá corpo sem doçura; açúcar invertido baixa o ponto de congelamento.",
+    frozenyogurt:"Iogurte entra frio após pasteurizar. Acidez e proteína mais altas que gelato. Estabilizado pelas proteínas do iogurte; neutro opcional acima."};
   document.getElementById('ingnote').textContent=notes[state.base];
   // lit ranges
-  const lit={gelato:"Gelato: PRT 40–52 · POD 170–180 · ST 380–420 · PAC ~300–323",
-    icecream:"Ice cream (EUA): gordura 100–180 (10–18%) · ST 380–420 · overrun 50–100% · servido mais frio",
+  const lit={gelato:"Gelato: PRT 40–52 · POD 170–180 · ST 380–420 (choco até ~450) · PAC ~300–323",
+    icecream:"Ice cream (EUA): gordura 100–180 (10–18%) · ST 380–430 · overrun alto · servido mais frio",
     sorbet:"Sorbet: ST 300–340 · POD 190–220 · PAC 270–290 · sem gordura",
     frozenyogurt:"Fro-yo: PRT 45–55 · ST 360–400 · POD 170–180 · PAC ~285–295"};
   document.getElementById('litranges').innerHTML=`<b>Literatura:</b> ${lit[state.base]}`;
@@ -541,7 +573,7 @@ function render(){
   const w=document.getElementById('warnSF');
   let warnMsg="";
   if(state.diet==="sugarfree")
-    warnMsg+="⚠ <b>Sem açúcar:</b> eritritol tem PAC ~zero, então o PAC máximo realista é baixo (~110). O produto fica <b>mais duro</b> — sirva após temperar 10–15 min. Forçar PAC alto exigiria açúcar (anula o sem-açúcar) ou doses impraticáveis de inulina.";
+    warnMsg+="⚠ <b>Sem açúcar:</b> o eritritol adoça, mas seu poder anticongelante <b>efetivo</b> é baixo: ele cristaliza e tem solubilidade limitada, então grande parte da depressão do ponto de congelamento se perde na matriz congelada. Na prática o PAC realista fica baixo (~110) e o produto fica <b>mais duro</b>. Sirva após temperar 10 a 15 min. Forçar PAC alto exigiria açúcar (anula o sem-açúcar) ou doses impraticáveis de inulina.";
   if(state.flavor==="margarita"){
     if(warnMsg)warnMsg+="<br><br>";
     warnMsg+="🍹 <b>Margarita com álcool:</b> o álcool tem PAC altíssimo e abaixa muito o ponto de congelamento. Esta versão fica <b>bem mole</b> e pode não firmar numa máquina doméstica — sirva tipo granita/slush. Para textura de sorbet de verdade, use a <b>Margarita sem álcool</b>. Não balanceie o PAC para cima aqui.";
@@ -577,7 +609,7 @@ function update(){
   document.getElementById('foot').innerHTML=`<tr class="total"><td>Total</td><td class="num">${t.g.toFixed(0)} g</td>
     <td class="num">${t.Gor.toFixed(0)}</td><td class="num">${t.PRT.toFixed(0)}</td>
     <td class="num">${t.ST.toFixed(0)}</td><td class="num">${t.POD.toFixed(0)}</td><td class="num">${t.PAC.toFixed(0)}</td></tr>`;
-  const tgt=currentTargets();
+  const tgt=currentTargets(t.g);
   const g=document.getElementById('gauges');g.innerHTML='';
   METRICS.forEach(m=>{
     const val=t[m],target=tgt[m];const pct=target?Math.min(100,val/target*100):0;
@@ -643,7 +675,7 @@ function renderRecipe(){
 
 // ---- auto-balance ----
 function autoBalance(){
-  const totalG=state.amount, targets=currentTargets();
+  const totalG=state.amount, targets=currentTargets(totalG);
   const levers=leversFor(state.base,state.diet), filler=fillerFor(state.base,state.diet);
   let r={};state.rows.forEach(row=>{r[row.ing]=row.g;});
   for(const m in levers){if(levers[m]&&r[levers[m]]===undefined)r[levers[m]]=0;}
@@ -665,7 +697,8 @@ function autoBalance(){
 // ---- copy recipe ----
 function copyRecipe(){
   const t=calc();let txt=`${FLABEL[state.flavor]||state.flavor} — ${state.base}`;
-  if(state.diet!=='normal')txt+=` (${state.diet==='lactosefree'?'sem lactose':'sem açúcar'})`;
+  const dietLabel={lactosefree:'sem lactose',sugarfree:'sem açúcar',lowcal:'baixas calorias'};
+  if(state.diet!=='normal')txt+=` (${dietLabel[state.diet]||state.diet})`;
   txt+=`\nTotal: ${t.g.toFixed(0)} g\n\nINGREDIENTES:\n`;
   [...state.rows].sort((a,b)=>b.g-a.g).forEach(r=>{if(r.g>=0.5)txt+=`  ${ING[r.ing].n}: ${r.g} g\n`;});
   txt+=`\nBALANÇO: Gor ${t.Gor.toFixed(0)} · PRT ${t.PRT.toFixed(0)} · ST ${t.ST.toFixed(0)} · POD ${t.POD.toFixed(0)} · PAC ${t.PAC.toFixed(0)}\n\nPREPARO:\n`;
@@ -694,7 +727,7 @@ document.getElementById('baseSeg').addEventListener('click',e=>{
   if(e.target.tagName!=='BUTTON')return;
   document.querySelectorAll('#baseSeg button').forEach(b=>b.classList.remove('on'));
   e.target.classList.add('on');state.base=e.target.dataset.v;
-  syncDietOptions();buildFlavorSelect();loadRecipe();
+  syncDietOptions();syncNeutro();buildFlavorSelect();loadRecipe();
 });
 // Sorbet has no dairy → disable "sem lactose"; revert to normal if it was selected.
 function syncDietOptions(){
@@ -723,6 +756,13 @@ document.getElementById('functional').addEventListener('change',e=>{
   loadRecipe();
 });
 document.getElementById('wheyAmt').addEventListener('input',loadRecipe);
+document.getElementById('neutroChk').addEventListener('change',e=>{
+  document.getElementById('neutroControls').style.display=e.target.checked?'flex':'none';
+  loadRecipe();
+});
+document.getElementById('neutroAmt').addEventListener('input',loadRecipe);
+// sorbet usa xantana, não neutro → esconde o controle de neutro
+function syncNeutro(){document.getElementById('neutroBlock').style.display=state.base==='sorbet'?'none':'block';}
 document.getElementById('copyRecipe').addEventListener('click',copyRecipe);
 function updatePacSug(){const t=+document.getElementById('temp').value;const sug=suggestPAC(t);
   document.getElementById('pacsug').textContent=`(sugerido p/ ${t}°C: ${sug} — regra prática, ajustável)`;}
@@ -738,6 +778,7 @@ document.getElementById('pac').addEventListener('input',e=>{
 
 // init
 syncDietOptions();
+syncNeutro();
 buildFlavorSelect();
 document.getElementById('tempval').textContent='-18°C';
 loadRecipe();updatePacSug();
