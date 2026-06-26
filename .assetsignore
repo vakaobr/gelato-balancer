@@ -1,0 +1,11 @@
+.git
+.git/**
+.gitignore
+.wrangler
+.wrangler/**
+wrangler.toml
+wrangler.jsonc
+wrangler.yaml
+README.md
+LICENSE
+node_modules
