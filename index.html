@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Balanceador de Gelato &amp; Sorbet</title>
+<style>
+:root{
+  --bg:#EEF0EB; --panel:#F8F9F6; --ink:#163A36; --ink2:#3D5C57;
+  --pistache:#9CB86F; --pistache-d:#7A9A4E; --frost:#5B8FB0; --frost-l:#DCE9F0;
+  --amber:#C6792E; --amber-l:#F4E4CE; --ok:#5E8C4A; --line:#D5DACF;
+  --mono:'SF Mono',ui-monospace,'Cascadia Mono','Roboto Mono',Menlo,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Segoe UI',-apple-system,system-ui,sans-serif;line-height:1.5;padding:24px 16px 80px}
+.wrap{max-width:980px;margin:0 auto}
+header{margin-bottom:24px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--pistache-d);font-weight:600}
+h1{font-size:30px;font-weight:700;letter-spacing:-.02em;margin:4px 0 6px}
+.sub{color:var(--ink2);font-size:14px;max-width:64ch}
+.segmented{display:inline-flex;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:3px;gap:2px;margin-bottom:14px;flex-wrap:wrap}
+.segmented button{font-family:var(--mono);font-size:12px;letter-spacing:.04em;text-transform:uppercase;background:transparent;border:none;color:var(--ink2);padding:8px 14px;border-radius:8px;cursor:pointer;font-weight:600}
+.segmented button.on{background:var(--ink);color:#fff}
+.segmented button:disabled{opacity:.35;cursor:not-allowed;text-decoration:line-through}
+.controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+.field label{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink2);margin-bottom:6px;font-weight:600}
+select,input[type=number]{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);font-size:15px;font-family:var(--mono)}
+select:focus,input:focus{outline:2px solid var(--pistache);outline-offset:1px}
+.btn{font-family:var(--mono);font-size:11px;letter-spacing:.05em;text-transform:uppercase;background:var(--pistache);color:#fff;border:none;padding:9px 13px;border-radius:8px;cursor:pointer;font-weight:600;width:100%}
+.btn:hover{background:var(--pistache-d)}
+.btn.dark{background:var(--ink)} .btn.ghost{background:transparent;color:var(--ink2);border:1px solid var(--line)}
+.temp-block{background:var(--frost-l);border:1px solid #C3D8E3;border-radius:14px;padding:16px 18px;margin:14px 0}
+.temp-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.temp-row label{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--frost);font-weight:600;min-width:90px}
+input[type=range]{flex:1;min-width:150px;accent-color:var(--frost)}
+.pac-readout{font-family:var(--mono);font-size:13px;color:var(--ink2)} .pac-readout b{color:var(--frost);font-size:16px}
+.suggest{font-size:12px;color:var(--frost);font-family:var(--mono)}
+.flag{display:inline-block;font-family:var(--mono);font-size:10px;background:var(--amber-l);color:var(--amber);padding:2px 7px;border-radius:5px;letter-spacing:.05em;font-weight:600;margin-left:6px;vertical-align:middle}
+.flag.ok{background:#E3EFDB;color:var(--ok)}
+.grid{display:grid;grid-template-columns:1fr;gap:18px;margin-top:18px}
+@media(min-width:780px){.grid{grid-template-columns:1.12fr .88fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+.card h2{font-size:13px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink2);margin-bottom:14px;font-weight:600;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2);font-weight:600;padding:6px 4px;border-bottom:1px solid var(--line)}
+td{padding:5px 4px;border-bottom:1px solid #E8EBE3}
+td.num{font-family:var(--mono);text-align:right}
+.ing-name{font-weight:500}
+.gram-in{width:74px;padding:5px 7px;font-size:13px;text-align:right;font-family:var(--mono);border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--pistache-d);font-weight:600}
+tr.total td{font-weight:700;border-top:2px solid var(--line);border-bottom:none;padding-top:9px}
+.gauge{margin-bottom:11px} .gauge-head{display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px}
+.gauge-head .lab{font-weight:600} .gauge-head .val{font-family:var(--mono);color:var(--ink2)}
+.bar{height:8px;background:#E4E8DD;border-radius:5px;overflow:hidden;position:relative}
+.bar i{position:absolute;top:0;left:0;height:100%;border-radius:5px;transition:width .25s ease,background .25s}
+.target-tick{position:absolute;top:-2px;width:2px;height:12px;background:var(--ink);opacity:.5}
+.note{font-size:12px;color:var(--ink2);margin-top:6px;line-height:1.45}
+.lit-ranges{font-size:12px;font-family:var(--mono);color:var(--ink2);margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)} .lit-ranges b{color:var(--ink)}
+.recipe-card{margin-top:18px}
+.recipe-list{list-style:none;font-size:14px}
+.recipe-list li{display:flex;justify-content:space-between;padding:6px 2px;border-bottom:1px solid #E8EBE3}
+.recipe-list .amt{font-family:var(--mono);font-weight:600;color:var(--pistache-d)}
+.steps{counter-reset:s;list-style:none;margin-top:6px}
+.steps li{counter-increment:s;position:relative;padding:10px 0 10px 38px;border-bottom:1px solid #E8EBE3}
+.steps li::before{content:counter(s);position:absolute;left:0;top:9px;width:26px;height:26px;background:var(--ink);color:#fff;border-radius:50%;display:grid;place-items:center;font-family:var(--mono);font-size:12px;font-weight:700}
+.steps .st{font-weight:600;font-size:14px} .steps .sd{font-size:13px;color:var(--ink2);margin-top:2px}
+.chip{display:inline-block;font-family:var(--mono);font-size:10px;background:var(--frost-l);color:var(--frost);padding:1px 6px;border-radius:4px;margin-right:5px;margin-top:4px;font-weight:600}
+.disclaim{border-radius:10px;padding:12px 14px;margin-top:16px;font-size:12.5px}
+.cap{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--pistache-d);font-weight:600;margin-bottom:4px}
+footer{margin-top:24px;font-size:12px;color:var(--ink2);line-height:1.5}
+.warn-sf{background:var(--amber-l);border:1px solid #E6C99E;color:#6B4A1E;border-radius:10px;padding:11px 14px;margin-top:12px;font-size:12.5px;display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="eyebrow">Laboratório · Balanceamento</div>
+  <h1>Balanceador de Gelato &amp; Sorbet</h1>
+  <p class="sub">Escolha base, sabor, dieta e temperatura. A receita é balanceada ao vivo, e ao final você recebe a ficha de preparo completa para a máquina.</p>
+</header>
+
+<div class="cap">Base</div>
+<div class="segmented" id="baseSeg">
+  <button data-v="gelato" class="on">Gelato (leite)</button>
+  <button data-v="icecream">Ice cream (EUA)</button>
+  <button data-v="sorbet">Sorbet (fruta)</button>
+  <button data-v="frozenyogurt">Frozen yogurt</button>
+</div>
+<div class="cap">Dieta</div>
+<div class="segmented" id="dietSeg">
+  <button data-v="normal" class="on">Normal</button>
+  <button data-v="lactosefree">Sem lactose</button>
+  <button data-v="sugarfree">Sem açúcar</button>
+</div>
+
+<div class="controls">
+  <div class="field">
+    <label for="flavor">Sabor</label>
+    <select id="flavor"></select>
+  </div>
+  <div class="field">
+    <label for="amount">Quantidade total (g)</label>
+    <input type="number" id="amount" value="1000" min="100" step="50">
+  </div>
+  <div class="field">
+    <label>&nbsp;</label>
+    <button class="btn dark" id="balance">⚖ Balancear automaticamente</button>
+  </div>
+  <div class="field">
+    <label>&nbsp;</label>
+    <button class="btn ghost" id="reset">↺ Recarregar sugestão</button>
+  </div>
+</div>
+
+<div class="warn-sf" id="warnSF"></div>
+
+<div class="temp-block" style="background:#EFEAF4;border-color:#CBBEDB">
+  <div class="temp-row">
+    <label for="functional" style="color:#7A5BA8;display:flex;align-items:center;gap:8px;cursor:pointer;min-width:auto">
+      <input type="checkbox" id="functional" style="width:18px;height:18px;accent-color:#7A5BA8;cursor:pointer"> Funcional (proteína)
+    </label>
+    <span id="wheyControls" style="display:none;align-items:center;gap:10px;flex-wrap:wrap">
+      <span class="pac-readout" style="color:#7A5BA8">Whey hidrolisado <input type="number" id="wheyAmt" value="40" min="0" max="200" step="5" style="width:60px;padding:5px 7px;font-size:13px;font-family:var(--mono)"> g</span>
+      <span class="suggest" id="wheyInfo" style="color:#7A5BA8"></span>
+    </span>
+  </div>
+</div>
+
+<div class="temp-block">
+  <div class="temp-row">
+    <label for="temp">Temp. freezer</label>
+    <input type="range" id="temp" min="-24" max="-8" step="1" value="-18">
+    <span class="pac-readout">T = <b id="tempval">-18°C</b></span>
+  </div>
+  <div class="temp-row" style="margin-top:10px">
+    <label for="pac">PAC alvo</label>
+    <input type="range" id="pac" min="40" max="380" step="1" value="323">
+    <span class="pac-readout">PAC = <b id="pacval">323</b> <span class="suggest" id="pacsug"></span></span>
+  </div>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <h2>Ingredientes <span id="flavtag" class="flag ok"></span></h2>
+    <table>
+      <thead><tr><th>Ingrediente</th><th style="text-align:right">Gramas</th><th style="text-align:right">Gor</th><th style="text-align:right">PRT</th><th style="text-align:right">ST</th><th style="text-align:right">POD</th><th style="text-align:right">PAC</th></tr></thead>
+      <tbody id="rows"></tbody>
+      <tfoot id="foot"></tfoot>
+    </table>
+    <div class="note" id="ingnote"></div>
+  </div>
+  <div class="card">
+    <h2>Balanço vs Alvo</h2>
+    <div id="gauges"></div>
+    <div class="lit-ranges" id="litranges"></div>
+  </div>
+</div>
+
+<div class="card recipe-card">
+  <h2>Tabela nutricional
+    <span style="font-family:var(--mono);font-size:11px;font-weight:600;color:var(--ink2);text-transform:none;letter-spacing:0">
+      Porção <input type="number" id="serving" value="80" min="10" step="10" style="width:58px;padding:4px 6px;font-size:12px"> g
+      &nbsp;·&nbsp; Overrun <input type="number" id="overrun" value="25" min="0" max="120" step="5" style="width:54px;padding:4px 6px;font-size:12px"> %
+    </span>
+  </h2>
+  <table id="nutriTable">
+    <thead><tr><th>Nutriente</th><th style="text-align:right">Por 100 g mistura</th><th style="text-align:right">Por 100 mL gelato</th><th style="text-align:right">Por porção</th></tr></thead>
+    <tbody id="nutriRows"></tbody>
+  </table>
+  <div class="note" id="nutriNote"></div>
+</div>
+
+<div class="card recipe-card">
+  <h2>Ficha de preparo <button class="btn ghost" id="copyRecipe" style="width:auto;padding:5px 11px">Copiar</button></h2>
+  <div class="cap" style="margin-top:4px">Receita (proporção final)</div>
+  <ul class="recipe-list" id="recipeList"></ul>
+  <div class="cap" style="margin-top:16px">Modo de preparo</div>
+  <ol class="steps" id="stepsList"></ol>
+</div>
+
+<div class="disclaim" id="disclaim"></div>
+
+<footer>
+  <div class="cap">Como funciona</div>
+  Coeficientes por 100g acionam os cálculos. Pistache vem da sua receita validada; demais combinações partem de faixas de literatura (Corvitto / Caviezel) e devem ser conferidas com seus ingredientes. As etapas de preparo combinam processo de literatura com a operação real da H.Koenig HF340 (compressor, sem pré-congelar a tigela, limite de 60%, base a ~20°C antes de bater).
+</footer>
+</div>
+<script>
+const ING = {
+  pistache:{n:"Pasta de pistache",c:[49,21,96,8,8],nut:[560,45,28,8,20]},
+  avela:{n:"Pasta de avelã",c:[62,16,98,6,6],nut:[628,61,17,5,15]},
+  amendoa:{n:"Pasta de amêndoa",c:[55,21,94,7,7],nut:[579,50,22,5,21]},
+  nozes:{n:"Pasta de nozes (walnut)",c:[65,15,97,3,3],nut:[654,65,14,3,15]},
+  castanhapara:{n:"Pasta de castanha do Pará",c:[66,14,97,2,2],nut:[659,67,12,2,14]},
+  leite:{n:"Leite integral",c:[3.5,3.2,12,0.82,4.89],nut:[61,3.3,4.8,4.8,3.2]},
+  natas:{n:"Natas frescas 35%",c:[35,2,40,3,3],nut:[340,35,3,3,2]},
+  leitepo:{n:"Leite em pó desn.",c:[1,35,96,52,54],nut:[358,1,52,52,35]},
+  gema:{n:"Gema de ovo",c:[31,16,50,0,0],nut:[322,27,3.6,0.6,16]},
+  iogurtegrego:{n:"Iogurte grego",c:[5,9,16,3,4],nut:[97,5,3.6,3.6,9]},
+  leiteLF:{n:"Leite sem lactose",c:[3.5,3.2,12,3,9],nut:[61,3.3,4.8,4.8,3.2]},
+  nataLF:{n:"Natas sem lactose 35%",c:[35,2,40,4,5],nut:[340,35,3,3,2]},
+  sacarose:{n:"Sacarose",c:[0,0,100,100,100],nut:[400,0,100,100,0]},
+  dextrose:{n:"Dextrose",c:[0,0,100,74,193],nut:[368,0,92,92,0]},
+  invertido:{n:"Açúcar invertido",c:[0,0,75,125,190],nut:[310,0,75,75,0]},
+  malto:{n:"Maltodextrina",c:[0,0,100,0,0],nut:[380,0,95,2,0]},
+  eritritol:{n:"Eritritol",c:[0,0,100,70,0],nut:[20,0,100,0,0]},
+  inulina:{n:"Inulina",c:[0,0,95,10,5],nut:[150,0,95,5,0]},
+  cacau:{n:"Cacau magro",c:[11,20,95,0,0],nut:[228,11,58,1,20]},
+  choco70:{n:"Chocolate 70%",c:[42,8,99,35,35],nut:[598,42,46,37,8]},
+  polpa:{n:"Polpa de fruta",c:[0.2,0.5,12,10,11],nut:[50,0.2,12,10,0.5]},
+  manga:{n:"Polpa de manga",c:[0.3,0.6,15,12,14],nut:[60,0.4,15,14,0.8]},
+  morango:{n:"Polpa de morango",c:[0.3,0.7,10,7,9],nut:[32,0.3,8,5,0.7]},
+  banana:{n:"Banana (polpa)",c:[0.3,1.1,24,20,24],nut:[89,0.3,23,12,1.1]},
+  kiwi:{n:"Kiwi (polpa)",c:[0.5,1.1,17,14,17],nut:[61,0.5,15,9,1.1]},
+  abacaxi:{n:"Abacaxi (polpa)",c:[0.1,0.5,14,12,14],nut:[50,0.1,13,10,0.5]},
+  pessego:{n:"Pêssego (polpa)",c:[0.1,0.9,12,9,12],nut:[39,0.3,10,8,0.9]},
+  limao:{n:"Suco de limão/lima",c:[0.2,0.4,6,4,5],nut:[25,0.2,8,2,0.4]},
+  agave:{n:"Xarope de agave",c:[0,0,76,90,120],nut:[310,0,76,68,0]},
+  tequila:{n:"Tequila (40%)",c:[0,0,40,0,240],nut:[231,0,0,0,0]},
+  tripleSec:{n:"Triple sec",c:[0,0,38,30,260],nut:[330,0,30,30,0]},
+  cafe:{n:"Café (extrato)",c:[0,0,95,0,0],nut:[2,0,0,0,0.1]},
+  pastacaramelo:{n:"Pasta de caramelo",c:[10,2,80,60,60],nut:[380,10,68,60,2]},
+  baunilhavg:{n:"Baunilha (fava)",c:[0,0,90,0,0],nut:[288,0,13,13,0]},
+  sal:{n:"Sal",c:[0,0,100,0,600],nut:[0,0,0,0,0]},
+  neutro:{n:"Neutro p/ sorvete",c:[0,0,100,0,0],nut:[200,0,80,0,0]},
+  whey:{n:"Whey hidrolisado",c:[1,80,90,0,0],nut:[360,1,5,3,84]},
+  agua:{n:"Água",c:[0,0,0,0,0],nut:[0,0,0,0,0]},
+};
+const NUTI={kcal:0,fat:1,carb:2,sugar:3,prot:4};
+const METRICS=["Gor","PRT","ST","POD","PAC"], MIDX={Gor:0,PRT:1,ST:2,POD:3,PAC:4};
+
+// flavors available per base type
+const FLAVORS={
+  gelato:["pistache","avela","amendoa","nozes","castanhapara","baunilha","chocolate","cafe","caramelo","morango","banana","caramelo_banana","manga","pessego"],
+  icecream:["baunilha","chocolate","morango","caramelo","cafe","banana","caramelo_banana","pistache","nozes"],
+  sorbet:["manga","morango","limao","frutas_vermelhas","banana","caramelo_banana","abacaxi","kiwi","pessego","margarita","margarita_virgem"],
+  frozenyogurt:["natural","morango","manga","banana","pessego"],
+};
+const FLABEL={pistache:"Pistache",avela:"Avelã",amendoa:"Amêndoa",baunilha:"Baunilha / Fior di latte",
+  chocolate:"Chocolate",cafe:"Café",caramelo:"Caramelo salgado",manga:"Manga",morango:"Morango",
+  nozes:"Nozes (walnut)",castanhapara:"Castanha do Pará",
+  limao:"Limão / Lima",frutas_vermelhas:"Frutas vermelhas",natural:"Natural",
+  banana:"Banana",caramelo_banana:"Banana com caramelo salgado",abacaxi:"Abacaxi",kiwi:"Kiwi",
+  pessego:"Pêssego",margarita:"Margarita (com álcool)",margarita_virgem:"Margarita sem álcool"};
+
+// base recipe builders (normal diet) — per 1000g
+function baseRecipe(base,flavor){
+  if(base==="gelato"){
+    const common={leite:600,gema:55,leitepo:50,sacarose:88,dextrose:80,malto:30};
+    const F={
+      pistache:{pistache:100,leite:613,gema:65,sacarose:88,dextrose:96,sal:2,malto:36},
+      avela:{avela:80,leite:600,gema:60,sacarose:90,dextrose:95,sal:2,malto:40},
+      amendoa:{amendoa:90,leite:600,gema:60,sacarose:90,dextrose:92,sal:2,malto:38},
+      nozes:{nozes:75,leite:600,gema:60,sacarose:90,dextrose:95,sal:2,malto:40},
+      castanhapara:{castanhapara:75,leite:600,gema:60,sacarose:90,dextrose:95,sal:2,malto:40},
+      baunilha:{leite:640,natas:120,leitepo:55,gema:55,sacarose:90,dextrose:38,baunilhavg:4,malto:2},
+      chocolate:{choco70:130,cacau:35,leite:400,natas:60,leitepo:30,sacarose:70,dextrose:50,malto:5,agua:30},
+      cafe:{leite:640,natas:110,leitepo:55,gema:50,sacarose:92,dextrose:40,cafe:15,malto:3},
+      caramelo:{leite:600,natas:110,leitepo:45,gema:50,pastacaramelo:90,sacarose:40,dextrose:40,sal:3,malto:3},
+      morango:{leite:560,natas:90,leitepo:50,morango:160,sacarose:90,dextrose:45,malto:5},
+      banana:{leite:540,natas:90,leitepo:45,banana:170,sacarose:70,dextrose:35,malto:5},
+      caramelo_banana:{leite:500,natas:95,leitepo:40,banana:150,pastacaramelo:70,sacarose:35,dextrose:35,sal:4,malto:5},
+      manga:{leite:560,natas:90,leitepo:50,manga:160,sacarose:88,dextrose:42,malto:5},
+      pessego:{leite:570,natas:90,leitepo:50,pessego:160,sacarose:92,dextrose:43,malto:5},
+    };
+    return F[flavor]||F.baunilha;
+  }
+  if(base==="icecream"){
+    // American ice cream: high butterfat (cream-heavy), egg-rich custard base
+    const F={
+      baunilha:{natas:300,leite:330,leitepo:50,gema:90,sacarose:120,dextrose:55,baunilhavg:5},
+      chocolate:{natas:280,leite:280,choco70:120,cacau:30,leitepo:35,gema:70,sacarose:80,dextrose:55},
+      morango:{natas:280,leite:280,morango:160,leitepo:45,gema:70,sacarose:110,dextrose:50},
+      caramelo:{natas:290,leite:300,leitepo:40,gema:80,pastacaramelo:100,sacarose:50,dextrose:45,sal:4},
+      cafe:{natas:300,leite:320,leitepo:50,gema:85,sacarose:120,dextrose:55,cafe:15},
+      banana:{natas:270,leite:280,banana:170,leitepo:45,gema:65,sacarose:90,dextrose:40},
+      caramelo_banana:{natas:270,leite:260,banana:150,pastacaramelo:80,leitepo:40,gema:65,sacarose:50,dextrose:40,sal:4},
+      pistache:{natas:290,leite:330,pistache:85,leitepo:30,gema:65,sacarose:100,dextrose:50,sal:2},
+      nozes:{natas:280,leite:310,nozes:85,leitepo:40,gema:75,sacarose:105,dextrose:52,sal:2},
+    };
+    return F[flavor]||F.baunilha;
+  }
+  if(base==="sorbet"){
+    const F={
+      manga:{manga:480,agua:300,sacarose:130,dextrose:55,invertido:30,neutro:5},
+      morango:{morango:500,agua:290,sacarose:135,dextrose:55,invertido:30,neutro:5},
+      limao:{limao:180,agua:600,sacarose:160,dextrose:60,invertido:30,neutro:5},
+      frutas_vermelhas:{polpa:470,agua:310,sacarose:135,dextrose:55,invertido:30,neutro:5},
+      banana:{banana:420,agua:330,sacarose:115,dextrose:50,invertido:30,neutro:5},
+      caramelo_banana:{banana:400,agua:300,pastacaramelo:70,sacarose:80,dextrose:45,sal:4,invertido:25,neutro:5},
+      abacaxi:{abacaxi:490,agua:295,sacarose:130,dextrose:55,invertido:30,neutro:5},
+      kiwi:{kiwi:470,agua:300,sacarose:135,dextrose:55,invertido:30,neutro:5},
+      pessego:{pessego:500,agua:290,sacarose:140,dextrose:55,invertido:30,neutro:5},
+      margarita:{limao:150,agua:520,sacarose:150,dextrose:60,invertido:30,tequila:50,tripleSec:25,neutro:5},
+      margarita_virgem:{limao:160,agua:560,agave:90,sacarose:120,dextrose:55,invertido:25,neutro:5},
+    };
+    return F[flavor]||F.manga;
+  }
+  // frozen yogurt
+  const F={
+    natural:{iogurtegrego:420,leite:250,leitepo:35,sacarose:95,dextrose:45,malto:5},
+    morango:{iogurtegrego:400,leite:230,morango:150,leitepo:30,sacarose:90,dextrose:40,malto:5},
+    manga:{iogurtegrego:400,leite:230,manga:150,leitepo:30,sacarose:90,dextrose:40,malto:5},
+    banana:{iogurtegrego:400,leite:220,banana:160,leitepo:30,sacarose:75,dextrose:35,malto:5},
+    pessego:{iogurtegrego:400,leite:230,pessego:150,leitepo:30,sacarose:90,dextrose:40,malto:5},
+  };
+  return F[flavor]||F.natural;
+}
+
+// targets per base (PAC handled separately via slider)
+function baseTargets(base){
+  if(base==="sorbet") return {Gor:2,PRT:3,ST:320,POD:200};
+  if(base==="frozenyogurt") return {Gor:40,PRT:50,ST:380,POD:175};
+  if(base==="icecream") return {Gor:115,PRT:46,ST:400,POD:175}; // American: high butterfat, egg-custard protein
+  return {Gor:88,PRT:48,ST:415,POD:172}; // gelato generic
+}
+// per-flavor target overrides (validated / literature) — gelato/nut-specific
+const FLAVOR_TARGETS={
+  pistache:{Gor:90,PRT:52,ST:420,POD:172},
+  avela:{Gor:90,PRT:50,ST:420,POD:172},
+  nozes:{Gor:90,PRT:48,ST:420,POD:172},
+  castanhapara:{Gor:90,PRT:48,ST:420,POD:172},
+  amendoa:{Gor:90,PRT:50,ST:418,POD:172},
+  chocolate:{Gor:90,PRT:44,ST:450,POD:165},
+  limao:{Gor:1,PRT:1,ST:300,POD:210},
+};
+function targetsFor(base,flavor){
+  // ice cream and sorbet keep their base targets; flavor overrides are tuned for gelato
+  if(base==="icecream"||base==="sorbet"||base==="frozenyogurt"){
+    const t=baseTargets(base);
+    if(flavor==="chocolate") t.ST=base==="icecream"?430:t.ST; // chocolate adds solids
+    return t;
+  }
+  return Object.assign(baseTargets(base), FLAVOR_TARGETS[flavor]||{});
+}
+function pacRefFor(base,diet){
+  if(diet==="sugarfree") return 110; // honest low ceiling
+  if(base==="sorbet") return 280;
+  if(base==="frozenyogurt") return 290;
+  if(base==="icecream") return 300;
+  return 315;
+}
+
+// diet transforms applied to a normal recipe
+function applyDiet(recipe,diet){
+  let r=Object.assign({},recipe);
+  if(diet==="lactosefree"){
+    if(r.leite){r.leiteLF=(r.leiteLF||0)+r.leite;delete r.leite;}
+    if(r.natas){r.nataLF=(r.nataLF||0)+r.natas;delete r.natas;}
+    if(r.leitepo){r.leitepo=Math.round(r.leitepo*0.4);} // reduce (lactose-heavy); whey will cover protein
+    if(r.iogurtegrego){/* assume LF yogurt available, keep */}
+  }
+  if(diet==="sugarfree"){
+    const sug=(r.sacarose||0)+(r.dextrose||0)+(r.invertido||0);
+    delete r.sacarose;delete r.dextrose;delete r.invertido;
+    r.eritritol=(r.eritritol||0)+Math.round(sug*0.9);
+    r.inulina=(r.inulina||0)+Math.round(sug*0.25);
+  }
+  return r;
+}
+// levers per base+diet (sugar-free uses NON-sugar levers)
+function leversFor(base,diet){
+  if(diet==="sugarfree"){
+    // POD/PAC cannot be chased sanely without sugar — leave them free, balance only Gor/PRT/ST
+    return {Gor:(base==="sorbet"?null:"natas"),PRT:(base==="sorbet"?null:"leitepo"),
+      ST:"malto",POD:null,PAC:null};
+  }
+  if(base==="sorbet") return {Gor:null,PRT:null,ST:"malto",POD:"sacarose",PAC:"dextrose"};
+  const fat=diet==="lactosefree"?"nataLF":"natas";
+  return {Gor:fat,PRT:(diet==="lactosefree"?"whey":"leitepo"),ST:"malto",POD:"sacarose",PAC:"dextrose"};
+}
+function fillerFor(base){return base==="sorbet"?"agua":(base==="gelato"||base==="frozenyogurt"||base==="icecream"?"leite":"agua");}
+
+// ---- prep steps: literature base-making + H.Koenig HF340 operation ----
+function prepSteps(base,hasEgg,isSugarFree){
+  const S=[];
+  if(base==="sorbet"){
+    S.push(["Pesar e misturar secos","Misture açúcares + neutro a seco para não empelotar."]);
+    S.push(["Aquecer a calda","Água + açúcares a 65°C, junte a mistura seca mexendo. [65°C]"]);
+    S.push(["Pasteurizar","Leve a 85°C por 30 s para dissolver e higienizar. [85°C · 30 s]"]);
+    S.push(["Resfriar rápido","Choque térmico até 4°C (banho de gelo). [4°C]"]);
+    S.push(["Adicionar a fruta","Incorpore a polpa FRIA à calda FRIA (calor mata cor e frescor). [4°C]"]);
+    S.push(["Maturar","Descanse 4–12 h a 4°C. [4–12 h]"]);
+  } else {
+    S.push(["Pesar e misturar secos","Leite em pó + açúcares + neutro/estabilizante a seco."]);
+    S.push(["Aquecer base láctea","Leite (e creme) a 40°C, junte os secos mexendo. [40°C]"]);
+    if(hasEgg) S.push(["Temperar as gemas","Tempere as gemas com um pouco da mistura quente antes de juntar."]);
+    S.push(["Pasteurizar","85°C por 30 s (ou 65°C por 30 min, lenta). [85°C · 30 s]"]);
+    S.push(["Homogeneizar","Mixer de imersão 1–2 min a quente — textura mais fina. [1–2 min]"]);
+    S.push(["Resfriar rápido","Choque térmico até 4°C. [4°C]"]);
+    if(base==="frozenyogurt") S.push(["Adicionar o iogurte","Incorpore o iogurte FRIO depois da pasteurização (preserva fermentos). [4°C]"]);
+    S.push(["Maturar","Descanse 4–12 h a 4°C — hidrata proteínas e estabilizante. [4–12 h]"]);
+  }
+  // --- H.Koenig HF340 specific operation ---
+  S.push(["Temperar a base (HF340)","NÃO ponha a base gelada direto: a HF340 pede mistura a ~20–25°C. Base muito fria trava a pá antes de bater. Deixe a base maturada voltar a ~20°C. [20–25°C]"]);
+  S.push(["Preparar a máquina","Lave tigela e pá. A HF340 tem compressor — NÃO precisa pré-congelar a tigela. Encaixe a tigela removível e a pá."]);
+  S.push(["Respeitar o limite de 60%","Encha no máx. 60% da tigela (2 L → ~1,2 L de base). O gelato cresce ao bater e transborda se passar disso. [máx ~1,2 L]"]);
+  S.push(["Bater (modo ICE CREAM)","Selecione [ICE CREAM] e bata ~40–60 min (padrão da máquina: 60 min). "+(base==="sorbet"?"Sorbet pode ficar pronto antes.":"")]);
+  if(base==="frozenyogurt"||base==="sorbet")
+    S.push(["Adicionar pedaços (opcional)","Frutas, raspas ou pedaços entram nos últimos minutos de batimento, pela tampa."]);
+  else
+    S.push(["Adicionar inclusões (opcional)","Castanhas, raspas ou pedaços nos últimos minutos, pela abertura da tampa."]);
+  S.push(["Servir ou endurecer","Sirva direto (textura macia) ou leve ao freezer -18°C por ≥4 h para firmar. A máquina mantém frio ~2 h se deixar parado. [-18°C · ≥4 h]"]);
+  if(isSugarFree) S.push(["Temperar p/ servir","Sem açúcar fica mais duro: 10–15 min fora do freezer antes de servir. [10–15 min]"]);
+  return S;
+}
+
+// ---- state ----
+let state={base:"gelato",diet:"normal",flavor:"pistache",amount:1000,rows:[],functional:false,wheyAmt:40};
+
+function isValidated(){return state.base==="gelato"&&state.diet==="normal"&&state.flavor==="pistache";}
+
+function buildFlavorSelect(){
+  const s=document.getElementById('flavor');s.innerHTML='';
+  FLAVORS[state.base].forEach(fk=>{const o=document.createElement('option');o.value=fk;o.textContent=FLABEL[fk]||fk;s.appendChild(o);});
+  if(!FLAVORS[state.base].includes(state.flavor)) state.flavor=FLAVORS[state.base][0];
+  s.value=state.flavor;
+}
+function suggestPAC(temp){const ref=pacRefFor(state.base,state.diet);return Math.round(ref+(-12-temp)*3);}
+
+function loadRecipe(){
+  const amt=+document.getElementById('amount').value||1000;
+  state.amount=amt;
+  state.functional=document.getElementById('functional').checked;
+  state.wheyAmt=+document.getElementById('wheyAmt').value||0;
+  let rec=baseRecipe(state.base,state.flavor);
+  rec=applyDiet(rec,state.diet);
+  const scale=amt/1000;
+  state.rows=Object.keys(rec).map(ing=>({ing,g:Math.round(rec[ing]*scale)}));
+  // functional: add whey as a fixed ingredient (user-controlled, not a solver lever)
+  if(state.functional && state.wheyAmt>0){
+    const existing=state.rows.find(r=>r.ing==='whey');
+    if(existing) existing.g=state.wheyAmt; else state.rows.push({ing:'whey',g:state.wheyAmt});
+  }
+  const t=+document.getElementById('temp').value;
+  const sug=suggestPAC(t);
+  document.getElementById('pac').value=Math.min(380,Math.max(40,sug));
+  document.getElementById('pacval').textContent=document.getElementById('pac').value;
+  const defOv={icecream:60,gelato:25,frozenyogurt:30,sorbet:25};
+  document.getElementById('overrun').value=defOv[state.base]||25;
+  render();
+}
+function calc(){const t={Gor:0,PRT:0,ST:0,POD:0,PAC:0,g:0};
+  for(const r of state.rows){const c=ING[r.ing].c;t.g+=r.g;METRICS.forEach(m=>t[m]+=r.g*c[MIDX[m]]/100);}return t;}
+
+function currentTargets(){
+  const tg=Object.assign({},targetsFor(state.base,state.flavor));
+  tg.PAC=+document.getElementById('pac').value;
+  // functional: protein deliberately exceeds base target. Lift PRT and ST targets by whey's
+  // contribution (whey ~80g protein, ~90g solids /100g), scaled to batch, so gauges track intent.
+  if(state.functional && state.wheyAmt>0){
+    const scale=1000/state.amount;
+    const wheyProt=state.wheyAmt*0.80*scale;
+    const wheySolids=state.wheyAmt*0.90*scale;
+    // malto (ST lever) can absorb some solids by going toward zero; lift ST by the net it can't
+    const maltoInRecipe=(state.rows.find(r=>r.ing==='malto')||{g:0}).g*scale;
+    const netSolids=Math.max(0, wheySolids - maltoInRecipe);
+    tg.PRT=tg.PRT+wheyProt;
+    tg.ST=tg.ST+netSolids;
+  }
+  return tg;
+}
+
+function render(){
+  // functional whey info
+  if(state.functional && state.wheyAmt>0){
+    const protAdd=(state.wheyAmt*0.80).toFixed(0);
+    const wheyPct=state.wheyAmt/state.amount*100;
+    let extra="";
+    if(wheyPct>7) extra=" · ⚠ dose alta: ST sobe muito, risco de textura mais gelada/seca";
+    document.getElementById('wheyInfo').textContent=`(+~${protAdd} g proteína no lote · PRT acima do alvo por opção${extra})`;
+  } else document.getElementById('wheyInfo').textContent="";
+  // flavor tag
+  const tag=document.getElementById('flavtag');
+  if(isValidated()){tag.textContent="validado";tag.className="flag ok";}
+  else{tag.textContent="verificar — literatura";tag.className="flag";}
+  // rows
+  const tb=document.getElementById('rows');tb.innerHTML='';
+  state.rows.forEach((r,i)=>{
+    const c=ING[r.ing].c;const tr=document.createElement('tr');
+    tr.innerHTML=`<td class="ing-name">${ING[r.ing].n}</td>
+      <td class="num"><input class="gram-in" type="number" data-i="${i}" value="${r.g}" min="0" step="1"></td>
+      <td class="num" data-c="0">${(r.g*c[0]/100).toFixed(0)}</td>
+      <td class="num" data-c="1">${(r.g*c[1]/100).toFixed(0)}</td>
+      <td class="num" data-c="2">${(r.g*c[2]/100).toFixed(0)}</td>
+      <td class="num" data-c="3">${(r.g*c[3]/100).toFixed(0)}</td>
+      <td class="num" data-c="4">${(r.g*c[4]/100).toFixed(0)}</td>`;
+    tb.appendChild(tr);
+  });
+  // note
+  const notes={gelato:"Base láctea. Leite em pó repõe proteína e sólidos sem água.",
+    icecream:"Ice cream americano: mais gordura (natas) e mais ar (overrun 50–100%). Base de creme rica em gemas.",
+    sorbet:"Sistema água+açúcar, sem laticínio. PAC controla a textura diretamente.",
+    frozenyogurt:"Iogurte entra frio após pasteurizar. Acidez e proteína mais altas que gelato."};
+  document.getElementById('ingnote').textContent=notes[state.base];
+  // lit ranges
+  const lit={gelato:"Gelato: PRT 40–52 · POD 170–180 · ST 380–420 · PAC ~300–323",
+    icecream:"Ice cream (EUA): gordura 100–180 (10–18%) · ST 380–420 · overrun 50–100% · servido mais frio",
+    sorbet:"Sorbet: ST 300–340 · POD 190–220 · PAC 270–290 · sem gordura",
+    frozenyogurt:"Fro-yo: PRT 45–55 · ST 360–400 · POD 170–180 · PAC ~285–295"};
+  document.getElementById('litranges').innerHTML=`<b>Literatura:</b> ${lit[state.base]}`;
+  // warnings (sugar-free and/or alcohol)
+  const w=document.getElementById('warnSF');
+  let warnMsg="";
+  if(state.diet==="sugarfree")
+    warnMsg+="⚠ <b>Sem açúcar:</b> eritritol tem PAC ~zero, então o PAC máximo realista é baixo (~110). O produto fica <b>mais duro</b> — sirva após temperar 10–15 min. Forçar PAC alto exigiria açúcar (anula o sem-açúcar) ou doses impraticáveis de inulina.";
+  if(state.flavor==="margarita"){
+    if(warnMsg)warnMsg+="<br><br>";
+    warnMsg+="🍹 <b>Margarita com álcool:</b> o álcool tem PAC altíssimo e abaixa muito o ponto de congelamento. Esta versão fica <b>bem mole</b> e pode não firmar numa máquina doméstica — sirva tipo granita/slush. Para textura de sorbet de verdade, use a <b>Margarita sem álcool</b>. Não balanceie o PAC para cima aqui.";
+  }
+  if(warnMsg){w.style.display="block";w.innerHTML=warnMsg;} else w.style.display="none";
+  // disclaimer
+  const d=document.getElementById('disclaim');
+  if(isValidated()){
+    d.innerHTML="✓ <b>Pistache</b> usa sua receita validada (escalada). Números confiáveis. Etapas de preparo são orientação geral.";
+    d.style.background="#E3EFDB";d.style.border="1px solid #B8D4A8";d.style.color="#3A5A2C";
+  }else{
+    d.innerHTML="⚠ Esta combinação parte de faixas de literatura (Corvitto / Caviezel), não de receita testada. Confira gordura/sólidos dos SEUS ingredientes. Etapas de preparo são orientação geral de processo.";
+    d.style.background="var(--amber-l)";d.style.border="1px solid #E6C99E";d.style.color="#6B4A1E";
+  }
+  // bind inputs once
+  document.querySelectorAll('.gram-in').forEach(inp=>{
+    inp.addEventListener('input',e=>{
+      const i=+e.target.dataset.i;state.rows[i].g=+e.target.value||0;
+      const c=ING[state.rows[i].ing].c,g=state.rows[i].g;
+      e.target.closest('tr').querySelectorAll('[data-c]').forEach(td=>{td.textContent=(g*c[+td.dataset.c]/100).toFixed(0);});
+      update();
+    });
+  });
+  update();
+}
+
+function update(){
+  const t=calc();
+  document.getElementById('foot').innerHTML=`<tr class="total"><td>Total</td><td class="num">${t.g.toFixed(0)} g</td>
+    <td class="num">${t.Gor.toFixed(0)}</td><td class="num">${t.PRT.toFixed(0)}</td>
+    <td class="num">${t.ST.toFixed(0)}</td><td class="num">${t.POD.toFixed(0)}</td><td class="num">${t.PAC.toFixed(0)}</td></tr>`;
+  const tgt=currentTargets();
+  const g=document.getElementById('gauges');g.innerHTML='';
+  METRICS.forEach(m=>{
+    const val=t[m],target=tgt[m];const pct=target?Math.min(100,val/target*100):0;
+    const absTol=target<5?1.5:0;
+    const off=target?(absTol?Math.abs(val-target)>absTol:Math.abs(val-target)/target>0.08):false;
+    const col=off?'var(--amber)':(m==='PAC'?'var(--frost)':'var(--pistache)');
+    const tickPos=target?Math.min(100,target/Math.max(target,val)*100):100;
+    const div=document.createElement('div');div.className='gauge';
+    div.innerHTML=`<div class="gauge-head"><span class="lab">${m}</span>
+      <span class="val">${val.toFixed(0)} / ${target} ${off?'⚠':'✓'}</span></div>
+      <div class="bar"><i style="width:${pct}%;background:${col}"></i><span class="target-tick" style="left:${tickPos}%"></span></div>`;
+    g.appendChild(div);
+  });
+  renderRecipe();
+  renderNutrition();
+}
+
+function renderNutrition(){
+  // sum nutrition across all ingredients (per gram), then scale
+  let tot={kcal:0,fat:0,carb:0,sugar:0,prot:0,g:0};
+  for(const r of state.rows){
+    const nu=ING[r.ing].nut;if(!nu)continue;
+    tot.g+=r.g;
+    tot.kcal+=r.g*nu[NUTI.kcal]/100; tot.fat+=r.g*nu[NUTI.fat]/100;
+    tot.carb+=r.g*nu[NUTI.carb]/100; tot.sugar+=r.g*nu[NUTI.sugar]/100; tot.prot+=r.g*nu[NUTI.prot]/100;
+  }
+  const g=tot.g||1;
+  const per100={kcal:tot.kcal/g*100,fat:tot.fat/g*100,carb:tot.carb/g*100,sugar:tot.sugar/g*100,prot:tot.prot/g*100};
+  const sv=+document.getElementById('serving').value||80;
+  const perSv={kcal:per100.kcal*sv/100,fat:per100.fat*sv/100,carb:per100.carb*sv/100,sugar:per100.sugar*sv/100,prot:per100.prot*sv/100};
+  // overrun: air whipped in, % by volume. Finished gelato density ~ mix_density/(1+overrun/100).
+  // Mix density ~1.10 g/mL (sugars+fat). 100 mL finished gelato weighs 110/(1+ov/100) g of mix.
+  const ov=Math.max(0,+document.getElementById('overrun').value||0);
+  const mixDensity=1.10; // g/mL
+  const gramsPer100mL=mixDensity*100/(1+ov/100);
+  const perVol={kcal:per100.kcal*gramsPer100mL/100,fat:per100.fat*gramsPer100mL/100,carb:per100.carb*gramsPer100mL/100,sugar:per100.sugar*gramsPer100mL/100,prot:per100.prot*gramsPer100mL/100};
+  const rows=[
+    ["Energia",per100.kcal.toFixed(0)+" kcal",perVol.kcal.toFixed(0)+" kcal",perSv.kcal.toFixed(0)+" kcal"],
+    ["Gorduras",per100.fat.toFixed(1)+" g",perVol.fat.toFixed(1)+" g",perSv.fat.toFixed(1)+" g"],
+    ["Hidratos de carbono",per100.carb.toFixed(1)+" g",perVol.carb.toFixed(1)+" g",perSv.carb.toFixed(1)+" g"],
+    ["&nbsp;&nbsp;dos quais açúcares",per100.sugar.toFixed(1)+" g",perVol.sugar.toFixed(1)+" g",perSv.sugar.toFixed(1)+" g"],
+    ["Proteínas",per100.prot.toFixed(1)+" g",perVol.prot.toFixed(1)+" g",perSv.prot.toFixed(1)+" g"],
+  ];
+  document.getElementById('nutriRows').innerHTML=rows.map(([n,a,b,c])=>
+    `<tr><td>${n}</td><td class="num">${a}</td><td class="num">${b}</td><td class="num">${c}</td></tr>`).join('');
+  document.getElementById('nutriNote').innerHTML="<b>Por 100 g</b> não muda com o ar — use esta para pesar a porção (mais exata). <b>Por 100 mL</b> considera o overrun de "+ov+"% (ar batido), útil para estimar por bola/colher. Overrun típico em máquina doméstica de compressor: 20–35%. Dados de ingredientes USDA/literatura; frutas variam com marca e maturação.";
+}
+
+function renderRecipe(){
+  const ul=document.getElementById('recipeList');ul.innerHTML='';
+  const sorted=[...state.rows].sort((a,b)=>b.g-a.g);
+  sorted.forEach(r=>{if(r.g<0.5)return;const li=document.createElement('li');
+    li.innerHTML=`<span>${ING[r.ing].n}</span><span class="amt">${r.g} g</span>`;ul.appendChild(li);});
+  const ol=document.getElementById('stepsList');ol.innerHTML='';
+  const hasEgg=state.rows.some(r=>r.ing==='gema'&&r.g>0);
+  prepSteps(state.base,hasEgg,state.diet==='sugarfree').forEach(([st,sd])=>{
+    const li=document.createElement('li');
+    const chips=(sd.match(/\[([^\]]+)\]/g)||[]).map(x=>`<span class="chip">${x.replace(/[\[\]]/g,'')}</span>`).join('');
+    const clean=sd.replace(/\s*\[[^\]]+\]/g,'');
+    li.innerHTML=`<div class="st">${st}</div><div class="sd">${clean}</div>${chips}`;ol.appendChild(li);
+  });
+}
+
+// ---- auto-balance ----
+function autoBalance(){
+  const totalG=state.amount, targets=currentTargets();
+  const levers=leversFor(state.base,state.diet), filler=fillerFor(state.base);
+  let r={};state.rows.forEach(row=>{r[row.ing]=row.g;});
+  for(const m in levers){if(levers[m]&&r[levers[m]]===undefined)r[levers[m]]=0;}
+  if(r[filler]===undefined)r[filler]=0;
+  const cT=()=>{let t={Gor:0,PRT:0,ST:0,POD:0,PAC:0,g:0};
+    for(const k in r){const c=ING[k].c;t.g+=r[k];METRICS.forEach((m,i)=>t[m]+=r[k]*c[MIDX[m]]/100);}return t;};
+  for(let it=0;it<600;it++){
+    for(const m of METRICS){const L=levers[m];if(!L)continue;const per=ING[L].c[MIDX[m]]/100;if(!per)continue;
+      const t=cT();r[L]=Math.max(0,r[L]+((targets[m]-t[m])/per)*0.5);}
+    const t=cT();r[filler]=Math.max(0,r[filler]+(totalG-t.g));
+  }
+  const order=[];state.rows.forEach(row=>order.push(row.ing));
+  for(const m in levers){if(levers[m]&&!order.includes(levers[m]))order.push(levers[m]);}
+  if(!order.includes(filler))order.push(filler);
+  state.rows=order.filter(ing=>r[ing]!==undefined&&r[ing]>0.5).map(ing=>({ing,g:Math.round(r[ing])}));
+  render();
+}
+
+// ---- copy recipe ----
+function copyRecipe(){
+  const t=calc();let txt=`${FLABEL[state.flavor]||state.flavor} — ${state.base}`;
+  if(state.diet!=='normal')txt+=` (${state.diet==='lactosefree'?'sem lactose':'sem açúcar'})`;
+  txt+=`\nTotal: ${t.g.toFixed(0)} g\n\nINGREDIENTES:\n`;
+  [...state.rows].sort((a,b)=>b.g-a.g).forEach(r=>{if(r.g>=0.5)txt+=`  ${ING[r.ing].n}: ${r.g} g\n`;});
+  txt+=`\nBALANÇO: Gor ${t.Gor.toFixed(0)} · PRT ${t.PRT.toFixed(0)} · ST ${t.ST.toFixed(0)} · POD ${t.POD.toFixed(0)} · PAC ${t.PAC.toFixed(0)}\n\nPREPARO:\n`;
+  const hasEgg=state.rows.some(r=>r.ing==='gema'&&r.g>0);
+  prepSteps(state.base,hasEgg,state.diet==='sugarfree').forEach(([st,sd],i)=>{txt+=`  ${i+1}. ${st} — ${sd.replace(/[\[\]]/g,'')}\n`;});
+  // nutrition
+  let nt={kcal:0,fat:0,carb:0,sugar:0,prot:0,g:0};
+  for(const r of state.rows){const nu=ING[r.ing].nut;if(!nu)continue;nt.g+=r.g;
+    nt.kcal+=r.g*nu[0]/100;nt.fat+=r.g*nu[1]/100;nt.carb+=r.g*nu[2]/100;nt.sugar+=r.g*nu[3]/100;nt.prot+=r.g*nu[4]/100;}
+  const gg=nt.g||1,sv=+document.getElementById('serving').value||80;
+  const ov=Math.max(0,+document.getElementById('overrun').value||0);
+  const gpml=1.10*100/(1+ov/100);
+  txt+=`\nTABELA NUTRICIONAL (por 100g mistura | por 100mL gelato @${ov}% overrun | por ${sv}g):\n`;
+  txt+=`  Energia: ${(nt.kcal/gg*100).toFixed(0)} | ${(nt.kcal/gg*gpml).toFixed(0)} | ${(nt.kcal/gg*sv).toFixed(0)} kcal\n`;
+  txt+=`  Gorduras: ${(nt.fat/gg*100).toFixed(1)} | ${(nt.fat/gg*gpml).toFixed(1)} | ${(nt.fat/gg*sv).toFixed(1)} g\n`;
+  txt+=`  Hidratos: ${(nt.carb/gg*100).toFixed(1)} | ${(nt.carb/gg*gpml).toFixed(1)} | ${(nt.carb/gg*sv).toFixed(1)} g\n`;
+  txt+=`    dos quais açúcares: ${(nt.sugar/gg*100).toFixed(1)} | ${(nt.sugar/gg*gpml).toFixed(1)} | ${(nt.sugar/gg*sv).toFixed(1)} g\n`;
+  txt+=`  Proteínas: ${(nt.prot/gg*100).toFixed(1)} | ${(nt.prot/gg*gpml).toFixed(1)} | ${(nt.prot/gg*sv).toFixed(1)} g\n`;
+  navigator.clipboard.writeText(txt).then(()=>{
+    const b=document.getElementById('copyRecipe');const o=b.textContent;b.textContent="Copiado ✓";setTimeout(()=>b.textContent=o,1500);
+  }).catch(()=>{});
+}
+
+// ---- events ----
+document.getElementById('baseSeg').addEventListener('click',e=>{
+  if(e.target.tagName!=='BUTTON')return;
+  document.querySelectorAll('#baseSeg button').forEach(b=>b.classList.remove('on'));
+  e.target.classList.add('on');state.base=e.target.dataset.v;
+  syncDietOptions();buildFlavorSelect();loadRecipe();
+});
+// Sorbet has no dairy → disable "sem lactose"; revert to normal if it was selected.
+function syncDietOptions(){
+  const lfBtn=document.querySelector('#dietSeg button[data-v="lactosefree"]');
+  const noDairy=state.base==="sorbet";
+  lfBtn.disabled=noDairy;
+  lfBtn.title=noDairy?"Sorbet não usa laticínios":"";
+  if(noDairy && state.diet==="lactosefree"){
+    state.diet="normal";
+    document.querySelectorAll('#dietSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v==="normal"));
+  }
+}
+document.getElementById('dietSeg').addEventListener('click',e=>{
+  if(e.target.tagName!=='BUTTON'||e.target.disabled)return;
+  document.querySelectorAll('#dietSeg button').forEach(b=>b.classList.remove('on'));
+  e.target.classList.add('on');state.diet=e.target.dataset.v;loadRecipe();
+});
+document.getElementById('flavor').addEventListener('change',e=>{state.flavor=e.target.value;loadRecipe();});
+document.getElementById('amount').addEventListener('input',loadRecipe);
+document.getElementById('serving').addEventListener('input',renderNutrition);
+document.getElementById('overrun').addEventListener('input',renderNutrition);
+document.getElementById('reset').addEventListener('click',loadRecipe);
+document.getElementById('balance').addEventListener('click',autoBalance);
+document.getElementById('functional').addEventListener('change',e=>{
+  document.getElementById('wheyControls').style.display=e.target.checked?'flex':'none';
+  loadRecipe();
+});
+document.getElementById('wheyAmt').addEventListener('input',loadRecipe);
+document.getElementById('copyRecipe').addEventListener('click',copyRecipe);
+function updatePacSug(){const t=+document.getElementById('temp').value;const sug=suggestPAC(t);
+  document.getElementById('pacsug').textContent=`(sugerido p/ ${t}°C: ${sug} — regra prática, ajustável)`;}
+document.getElementById('temp').addEventListener('input',e=>{
+  document.getElementById('tempval').textContent=e.target.value+'°C';
+  const sug=Math.min(380,Math.max(40,suggestPAC(+e.target.value)));
+  document.getElementById('pac').value=sug;document.getElementById('pacval').textContent=sug;
+  updatePacSug();update();
+});
+document.getElementById('pac').addEventListener('input',e=>{
+  document.getElementById('pacval').textContent=e.target.value;updatePacSug();update();
+});
+
+// init
+syncDietOptions();
+buildFlavorSelect();
+document.getElementById('tempval').textContent='-18°C';
+loadRecipe();updatePacSug();
+</script>
+</body>
+</html>
