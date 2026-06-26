@@ -90,6 +90,7 @@ footer{margin-top:24px;font-size:12px;color:var(--ink2);line-height:1.5}
   <button data-v="normal" class="on">Normal</button>
   <button data-v="lactosefree">Sem lactose</button>
   <button data-v="sugarfree">Sem açúcar</button>
+  <button data-v="lowcal">Baixas calorias</button>
 </div>
 
 <div class="controls">
@@ -191,13 +192,15 @@ const ING = {
   amendoa:{n:"Pasta de amêndoa",c:[55,21,94,7,7],nut:[579,50,22,5,21]},
   nozes:{n:"Pasta de nozes (walnut)",c:[65,15,97,3,3],nut:[654,65,14,3,15]},
   castanhapara:{n:"Pasta de castanha do Pará",c:[66,14,97,2,2],nut:[659,67,12,2,14]},
-  leite:{n:"Leite integral",c:[3.5,3.2,12,0.82,4.89],nut:[61,3.3,4.8,4.8,3.2]},
+  leite:{n:"Leite integral (Mercadona)",c:[3.6,3.1,11.6,0.82,4.89],nut:[63,3.6,4.6,4.6,3.1]},
   natas:{n:"Natas frescas 35%",c:[35,2,40,3,3],nut:[340,35,3,3,2]},
   leitepo:{n:"Leite em pó desn.",c:[1,35,96,52,54],nut:[358,1,52,52,35]},
   gema:{n:"Gema de ovo",c:[31,16,50,0,0],nut:[322,27,3.6,0.6,16]},
   iogurtegrego:{n:"Iogurte grego",c:[5,9,16,3,4],nut:[97,5,3.6,3.6,9]},
-  leiteLF:{n:"Leite sem lactose",c:[3.5,3.2,12,3,9],nut:[61,3.3,4.8,4.8,3.2]},
+  leiteLF:{n:"Leite proteico s/ lactose (Mercadona)",c:[0.2,6.0,11.5,3,9],nut:[44,0.2,4.6,4.6,6.0]},
   nataLF:{n:"Natas sem lactose 35%",c:[35,2,40,4,5],nut:[340,35,3,3,2]},
+  leiteamendoa:{n:"Leite de amêndoa (s/ açúcar)",c:[1.1,0.4,1,0,0],nut:[13,1.1,0.3,0,0.4]},
+  xantana:{n:"Goma xantana",c:[0,0,90,0,0],nut:[330,0,78,0,0]},
   sacarose:{n:"Sacarose",c:[0,0,100,100,100],nut:[400,0,100,100,0]},
   dextrose:{n:"Dextrose",c:[0,0,100,74,193],nut:[368,0,92,92,0]},
   invertido:{n:"Açúcar invertido",c:[0,0,75,125,190],nut:[310,0,75,75,0]},
@@ -281,17 +284,17 @@ function baseRecipe(base,flavor){
   }
   if(base==="sorbet"){
     const F={
-      manga:{manga:480,agua:300,sacarose:130,dextrose:55,invertido:30,neutro:5},
-      morango:{morango:500,agua:290,sacarose:135,dextrose:55,invertido:30,neutro:5},
-      limao:{limao:180,agua:600,sacarose:160,dextrose:60,invertido:30,neutro:5},
-      frutas_vermelhas:{polpa:470,agua:310,sacarose:135,dextrose:55,invertido:30,neutro:5},
-      banana:{banana:420,agua:330,sacarose:115,dextrose:50,invertido:30,neutro:5},
-      caramelo_banana:{banana:400,agua:300,pastacaramelo:70,sacarose:80,dextrose:45,sal:4,invertido:25,neutro:5},
-      abacaxi:{abacaxi:490,agua:295,sacarose:130,dextrose:55,invertido:30,neutro:5},
-      kiwi:{kiwi:470,agua:300,sacarose:135,dextrose:55,invertido:30,neutro:5},
-      pessego:{pessego:500,agua:290,sacarose:140,dextrose:55,invertido:30,neutro:5},
-      margarita:{limao:150,agua:520,sacarose:150,dextrose:60,invertido:30,tequila:50,tripleSec:25,neutro:5},
-      margarita_virgem:{limao:160,agua:560,agave:90,sacarose:120,dextrose:55,invertido:25,neutro:5},
+      manga:{manga:480,agua:300,sacarose:130,dextrose:55,invertido:30,xantana:2},
+      morango:{morango:500,agua:290,sacarose:135,dextrose:55,invertido:30,xantana:2},
+      limao:{limao:180,agua:600,sacarose:160,dextrose:60,invertido:30,xantana:2},
+      frutas_vermelhas:{polpa:470,agua:310,sacarose:135,dextrose:55,invertido:30,xantana:2},
+      banana:{banana:420,agua:330,sacarose:115,dextrose:50,invertido:30,xantana:2},
+      caramelo_banana:{banana:400,agua:300,pastacaramelo:70,sacarose:80,dextrose:45,sal:4,invertido:25,xantana:2},
+      abacaxi:{abacaxi:490,agua:295,sacarose:130,dextrose:55,invertido:30,xantana:2},
+      kiwi:{kiwi:470,agua:300,sacarose:135,dextrose:55,invertido:30,xantana:2},
+      pessego:{pessego:500,agua:290,sacarose:140,dextrose:55,invertido:30,xantana:2},
+      margarita:{limao:150,agua:520,sacarose:150,dextrose:60,invertido:30,tequila:50,tripleSec:25,xantana:2},
+      margarita_virgem:{limao:160,agua:560,agave:90,sacarose:120,dextrose:55,invertido:25,xantana:2},
     };
     return F[flavor]||F.manga;
   }
@@ -334,6 +337,7 @@ function targetsFor(base,flavor){
 }
 function pacRefFor(base,diet){
   if(diet==="sugarfree") return 110; // honest low ceiling
+  if(diet==="lowcal") return 170; // lower PAC: avoid adding sugar back via PAC lever; temper before serving
   if(base==="sorbet") return 280;
   if(base==="frozenyogurt") return 290;
   if(base==="icecream") return 300;
@@ -346,7 +350,10 @@ function applyDiet(recipe,diet){
   if(diet==="lactosefree"){
     if(r.leite){r.leiteLF=(r.leiteLF||0)+r.leite;delete r.leite;}
     if(r.natas){r.nataLF=(r.nataLF||0)+r.natas;delete r.natas;}
-    if(r.leitepo){r.leitepo=Math.round(r.leitepo*0.4);} // reduce (lactose-heavy); whey will cover protein
+    // The lactose-free milk is high-protein (6g/100g) and fat-free, so it already over-delivers
+    // protein and under-delivers fat. Drop milk powder (protein redundant) and let the cream
+    // lever carry the fat. This keeps protein naturally elevated — good for the functional goal.
+    if(r.leitepo){delete r.leitepo;}
     if(r.iogurtegrego){/* assume LF yogurt available, keep */}
   }
   if(diet==="sugarfree"){
@@ -354,6 +361,18 @@ function applyDiet(recipe,diet){
     delete r.sacarose;delete r.dextrose;delete r.invertido;
     r.eritritol=(r.eritritol||0)+Math.round(sug*0.9);
     r.inulina=(r.inulina||0)+Math.round(sug*0.25);
+  }
+  if(diet==="lowcal"){
+    // "Cut mostly sugar, keep some fat" — keep ~30% of real sugar (for PAC/texture),
+    // replace the rest with erythritol (sweetness) + inulina (body/fiber, few calories).
+    const sug=(r.sacarose||0)+(r.dextrose||0)+(r.invertido||0);
+    const keepDextrose=Math.round((r.dextrose||0)*0.45); // keep some dextrose for PAC/freezing
+    const keepSacarose=Math.round((r.sacarose||0)*0.25); // a little real sweetness
+    delete r.invertido;
+    r.dextrose=keepDextrose; r.sacarose=keepSacarose;
+    const removed=sug-keepDextrose-keepSacarose;
+    r.eritritol=(r.eritritol||0)+Math.round(removed*0.7);
+    r.inulina=(r.inulina||0)+Math.round(removed*0.3);
   }
   return r;
 }
@@ -364,11 +383,23 @@ function leversFor(base,diet){
     return {Gor:(base==="sorbet"?null:"natas"),PRT:(base==="sorbet"?null:"leitepo"),
       ST:"malto",POD:null,PAC:null};
   }
+  if(diet==="lowcal"){
+    // keep fat, sweeten with erythritol (zero-cal), use retained dextrose for PAC
+    return {Gor:(base==="sorbet"?null:"natas"),PRT:(base==="sorbet"?null:"leitepo"),
+      ST:"malto",POD:"eritritol",PAC:"dextrose"};
+  }
   if(base==="sorbet") return {Gor:null,PRT:null,ST:"malto",POD:"sacarose",PAC:"dextrose"};
   const fat=diet==="lactosefree"?"nataLF":"natas";
   return {Gor:fat,PRT:(diet==="lactosefree"?"whey":"leitepo"),ST:"malto",POD:"sacarose",PAC:"dextrose"};
 }
-function fillerFor(base){return base==="sorbet"?"agua":(base==="gelato"||base==="frozenyogurt"||base==="icecream"?"leite":"agua");}
+function fillerFor(base,diet){
+  if(base==="sorbet") return "agua";
+  // dairy bases use milk as filler — but lactose-free must use lactose-free milk
+  if(base==="gelato"||base==="frozenyogurt"||base==="icecream"){
+    return diet==="lactosefree" ? "leiteLF" : "leite";
+  }
+  return "agua";
+}
 
 // ---- prep steps: literature base-making + H.Koenig HF340 operation ----
 function prepSteps(base,hasEgg,isSugarFree){
@@ -457,6 +488,14 @@ function currentTargets(){
     tg.PRT=tg.PRT+wheyProt;
     tg.ST=tg.ST+netSolids;
   }
+  // lactose-free uses a high-protein milk (6g/100g) that naturally raises protein above the
+  // base target. Lift PRT to the protein the recipe actually carries, so the gauge reflects
+  // intent rather than flagging a false overshoot from the protein milk.
+  if(state.diet==="lactosefree"){
+    const actualProt=calc().PRT;
+    const baseProt=targetsFor(state.base,state.flavor).PRT;
+    if(actualProt>baseProt) tg.PRT=Math.round(actualProt);
+  }
   return tg;
 }
 
@@ -487,10 +526,10 @@ function render(){
     tb.appendChild(tr);
   });
   // note
-  const notes={gelato:"Base láctea. Leite em pó repõe proteína e sólidos sem água.",
-    icecream:"Ice cream americano: mais gordura (natas) e mais ar (overrun 50–100%). Base de creme rica em gemas.",
-    sorbet:"Sistema água+açúcar, sem laticínio. PAC controla a textura diretamente.",
-    frozenyogurt:"Iogurte entra frio após pasteurizar. Acidez e proteína mais altas que gelato."};
+  const notes={gelato:"Base láctea. Leite em pó repõe proteína e sólidos sem água. Estabilizante: neutro (combina com proteína/gordura do leite).",
+    icecream:"Ice cream americano: mais gordura (natas) e mais ar (overrun 50–100%). Base de creme rica em gemas. Estabilizante: neutro.",
+    sorbet:"Sistema água+açúcar, sem laticínio. PAC controla a textura. Estabilizante: goma xantana (~0,2%), melhor que neutro em base sem gordura. Açúcar invertido baixa o ponto de congelamento.",
+    frozenyogurt:"Iogurte entra frio após pasteurizar. Acidez e proteína mais altas que gelato. Estabilizante: neutro."};
   document.getElementById('ingnote').textContent=notes[state.base];
   // lit ranges
   const lit={gelato:"Gelato: PRT 40–52 · POD 170–180 · ST 380–420 · PAC ~300–323",
@@ -506,6 +545,10 @@ function render(){
   if(state.flavor==="margarita"){
     if(warnMsg)warnMsg+="<br><br>";
     warnMsg+="🍹 <b>Margarita com álcool:</b> o álcool tem PAC altíssimo e abaixa muito o ponto de congelamento. Esta versão fica <b>bem mole</b> e pode não firmar numa máquina doméstica — sirva tipo granita/slush. Para textura de sorbet de verdade, use a <b>Margarita sem álcool</b>. Não balanceie o PAC para cima aqui.";
+  }
+  if(state.diet==="lowcal"){
+    if(warnMsg)warnMsg+="<br><br>";
+    warnMsg+="📉 <b>Baixas calorias:</b> corta a maior parte do açúcar (mantém ~30% para textura) e adoça com eritritol/stevia; mantém a gordura para cremosidade. Calorias caem bastante. PAC fica abaixo do normal → produto um pouco mais firme: deixe temperar 5–10 min antes de servir. Inulina adiciona fibra e corpo no lugar do açúcar.";
   }
   if(warnMsg){w.style.display="block";w.innerHTML=warnMsg;} else w.style.display="none";
   // disclaimer
@@ -601,7 +644,7 @@ function renderRecipe(){
 // ---- auto-balance ----
 function autoBalance(){
   const totalG=state.amount, targets=currentTargets();
-  const levers=leversFor(state.base,state.diet), filler=fillerFor(state.base);
+  const levers=leversFor(state.base,state.diet), filler=fillerFor(state.base,state.diet);
   let r={};state.rows.forEach(row=>{r[row.ing]=row.g;});
   for(const m in levers){if(levers[m]&&r[levers[m]]===undefined)r[levers[m]]=0;}
   if(r[filler]===undefined)r[filler]=0;
